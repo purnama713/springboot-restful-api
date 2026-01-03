@@ -5,9 +5,12 @@ import com.belajar.springboot_restful_api.entity.User;
 import com.belajar.springboot_restful_api.model.ContactResponse;
 import com.belajar.springboot_restful_api.model.CreateContactRequest;
 import com.belajar.springboot_restful_api.repository.ContactRepository;
-import jakarta.transaction.Transactional;
+//import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.UUID;
 
@@ -19,6 +22,16 @@ public class ContactService {
 
     @Autowired
     private ValidationService validationService;
+
+    private ContactResponse toContactResponse(Contact contact) {
+        return ContactResponse.builder()
+                .id(contact.getId())
+                .firstName(contact.getFirstName())
+                .lastName(contact.getLastName())
+                .email(contact.getEmail())
+                .phone(contact.getPhone())
+                .build();
+    }
 
     @Transactional
     public ContactResponse create(User user, CreateContactRequest request) {
@@ -34,12 +47,14 @@ public class ContactService {
 
         contactRepository.save(contact);
 
-        return ContactResponse.builder()
-                .id(contact.getId())
-                .firstName(contact.getFirstName())
-                .lastName(contact.getLastName())
-                .email(contact.getEmail())
-                .phone(contact.getPhone())
-                .build();
+        return toContactResponse(contact);
+    }
+
+    @Transactional(readOnly = true)
+    public ContactResponse get(User user, String id) {
+        Contact contact = contactRepository.findFirstByUserAndId(user, id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Contact not found"));
+
+        return toContactResponse(contact);
     }
 }
